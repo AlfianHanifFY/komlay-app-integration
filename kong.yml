@@ -1,0 +1,69 @@
+_format_version: "3.0"
+
+services:
+  - name: webshop-service
+    url: http://webshop:5001
+    routes:
+      - name: webshop-route
+        paths:
+          - /api/orders
+        strip_path: false
+
+  - name: inventory-service
+    url: http://inventory:5002
+    routes:
+      - name: inventory-route
+        paths:
+          - /api/stock
+        strip_path: false
+
+  - name: partner-service
+    url: http://partner:5003
+    routes:
+      - name: partner-route
+        paths:
+          - /api/shipments
+        strip_path: false
+
+consumers:
+  - username: customer-app
+    keyauth_credentials:
+      - key: kilatmart-key-123
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - OPTIONS
+      headers:
+        - Accept
+        - Content-Type
+        - apikey
+        - X-Order-Id
+      exposed_headers:
+        - X-RateLimit-Remaining-Minute
+        - X-RateLimit-Limit-Minute
+
+  - name: key-auth
+    config:
+      key_names:
+        - apikey
+
+  - name: rate-limiting
+    config:
+      minute: 10
+      policy: local
+
+  - name: request-transformer
+    service: partner-service
+    config:
+      add:
+        headers:
+          - "X-Partner-Source:kilatmart-gateway"
+      rename:
+        headers:
+          - "X-Order-Id:X-KirimCepat-Ref"
