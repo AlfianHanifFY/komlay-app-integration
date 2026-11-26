@@ -2,36 +2,71 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>KilatMart Customer (Web/Mobile)</title>
+  <title>KilatMart Customer -> Kong API Gateway</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 32px auto; padding: 0 16px; color: #1e293b; }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .sub { color: #64748b; font-size: 0.9rem; margin-top: 0; }
+    .card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin: 12px 0; }
+    .card h2 { font-size: 1rem; margin: 0 0 8px; }
+    button { padding: 6px 12px; border: 1px solid #94a3b8; border-radius: 6px; background: #f8fafc; cursor: pointer; margin-right: 6px; }
+    button:hover { background: #e2e8f0; }
+    input { padding: 6px 8px; border: 1px solid #94a3b8; border-radius: 6px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+    .ok { background: #dcfce7; color: #166534; }
+    .warn { background: #fef9c3; color: #854d0e; }
+    .err { background: #fee2e2; color: #991b1b; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }
+  </style>
 </head>
 <body>
-  <h1>KilatMart Customer -> Kong API Gateway</h1>
+  <h1>KilatMart Customer &rarr; Kong API Gateway</h1>
+  <p class="sub">Gateway endpoint: <code>http://localhost:8000</code></p>
 
-  <p>
-    API Key:
-    <input id="apikey" value="kilatmart-key-123" size="25">
+  <div class="card">
+    <label>API Key: <input id="apikey" value="kilatmart-key-123" size="22"></label>
     <button onclick="document.getElementById('apikey').value=''">Clear Key (Test 401)</button>
     <button onclick="document.getElementById('apikey').value='kilatmart-key-123'">Reset Key</button>
-  </p>
+  </div>
 
-  <h2>1. Web Shop Service (/api/orders)</h2>
-  <button onclick="callApi('GET', '/api/orders')">GET Orders</button>
-  <button onclick="createOrder()">POST New Order</button>
+  <div class="card">
+    <h2>1. Web Shop Service (<code>/api/orders</code>)</h2>
+    <button onclick="callApi('GET', '/api/orders')">GET Orders</button>
+    <button onclick="createOrder()">POST New Order</button>
+  </div>
 
-  <h2>2. Inventory Service (/api/stock)</h2>
-  <button onclick="callApi('GET', '/api/stock')">GET Stock</button>
+  <div class="card">
+    <h2>2. Inventory Service (<code>/api/stock</code>)</h2>
+    <button onclick="callApi('GET', '/api/stock')">GET Stock</button>
+  </div>
 
-  <h2>3. KirimCepat Partner (/api/shipments)</h2>
-  <button onclick="callPartner()">GET Shipments (with X-Order-Id transform)</button>
+  <div class="card">
+    <h2>3. KirimCepat Partner (<code>/api/shipments</code>)</h2>
+    <button onclick="callPartner()">GET Shipments (X-Order-Id transform)</button>
+  </div>
 
-  <h2>4. Rate Limit Test (429)</h2>
-  <button onclick="spamRequests()">Send 12 Requests Fast</button>
+  <div class="card">
+    <h2>4. Rate Limit Test (<code>429</code>)</h2>
+    <button onclick="spamRequests()">Send 12 Requests Fast</button>
+  </div>
 
-  <h2>Response:</h2>
+  <h2>Response</h2>
+  <div id="status-badge"></div>
   <pre id="out">Click any button above...</pre>
 
   <script>
     const GATEWAY = "http://localhost:8000";
+
+    function showBadge(status, statusText, remaining, limit) {
+      const el = document.getElementById("status-badge");
+      let cls = "ok", msg = `Routed via Kong API Gateway (${status} ${statusText})`;
+      if (status === 401) { cls = "err"; msg = `Blocked by Kong Auth (${status} Unauthorized)`; }
+      else if (status === 429) { cls = "warn"; msg = `Rate Limited by Kong (${status} Too Many Requests)`; }
+      else if (status >= 500) { cls = "err"; msg = `Upstream Error via Kong (${status} ${statusText})`; }
+
+      const rateInfo = limit ? ` | RateLimit: ${remaining}/${limit} left` : "";
+      el.innerHTML = `<span class="badge ${cls}">${msg}${rateInfo}</span>`;
+    }
 
     async function callApi(method, path, body = null, extraHeaders = {}) {
       const key = document.getElementById("apikey").value;
@@ -44,18 +79,24 @@
         headers,
         body: body ? JSON.stringify(body) : null,
       });
+
+      showBadge(
+        res.status,
+        res.statusText,
+        res.headers.get("X-RateLimit-Remaining-Minute"),
+        res.headers.get("X-RateLimit-Limit-Minute")
+      );
+
       const text = await res.text();
-      document.getElementById("out").textContent =
-        `Status: ${res.status} ${res.statusText}\n\n${text}`;
-      return res.status;
+      try {
+        document.getElementById("out").textContent = JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        document.getElementById("out").textContent = text;
+      }
     }
 
     function createOrder() {
-      callApi("POST", "/api/orders", {
-        customer: "Customer Web",
-        item: "Kopi Susu",
-        qty: 1,
-      });
+      callApi("POST", "/api/orders", { customer: "Customer Web", item: "Kopi Susu", qty: 1 });
     }
 
     function callPartner() {
@@ -64,13 +105,16 @@
 
     async function spamRequests() {
       const results = [];
+      let lastStatus = 200;
       for (let i = 1; i <= 12; i++) {
         const key = document.getElementById("apikey").value;
         const res = await fetch(GATEWAY + "/api/orders", {
           headers: key ? { apikey: key } : {},
         });
-        results.push(`#${i}: ${res.status}`);
+        lastStatus = res.status;
+        results.push(`#${i}: ${res.status} ${res.statusText}`);
       }
+      showBadge(lastStatus, lastStatus === 429 ? "Too Many Requests" : "OK", null, null);
       document.getElementById("out").textContent = results.join("\n");
     }
   </script>
