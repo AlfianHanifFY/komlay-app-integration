@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>KilatMart Customer (Web/Mobile)</title>
+</head>
+<body>
+  <h1>KilatMart Customer -> Kong API Gateway</h1>
+
+  <p>
+    API Key:
+    <input id="apikey" value="kilatmart-key-123" size="25">
+    <button onclick="document.getElementById('apikey').value=''">Clear Key (Test 401)</button>
+    <button onclick="document.getElementById('apikey').value='kilatmart-key-123'">Reset Key</button>
+  </p>
+
+  <h2>1. Web Shop Service (/api/orders)</h2>
+  <button onclick="callApi('GET', '/api/orders')">GET Orders</button>
+  <button onclick="createOrder()">POST New Order</button>
+
+  <h2>2. Inventory Service (/api/stock)</h2>
+  <button onclick="callApi('GET', '/api/stock')">GET Stock</button>
+
+  <h2>3. KirimCepat Partner (/api/shipments)</h2>
+  <button onclick="callPartner()">GET Shipments (with X-Order-Id transform)</button>
+
+  <h2>4. Rate Limit Test (429)</h2>
+  <button onclick="spamRequests()">Send 12 Requests Fast</button>
+
+  <h2>Response:</h2>
+  <pre id="out">Click any button above...</pre>
+
+  <script>
+    const GATEWAY = "http://localhost:8000";
+
+    async function callApi(method, path, body = null, extraHeaders = {}) {
+      const key = document.getElementById("apikey").value;
+      const headers = { ...extraHeaders };
+      if (key) headers["apikey"] = key;
+      if (body) headers["Content-Type"] = "application/json";
+
+      const res = await fetch(GATEWAY + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null,
+      });
+      const text = await res.text();
+      document.getElementById("out").textContent =
+        `Status: ${res.status} ${res.statusText}\n\n${text}`;
+      return res.status;
+    }
+
+    function createOrder() {
+      callApi("POST", "/api/orders", {
+        customer: "Customer Web",
+        item: "Kopi Susu",
+        qty: 1,
+      });
+    }
+
+    function callPartner() {
+      callApi("GET", "/api/shipments", null, { "X-Order-Id": "ORD-999" });
+    }
+
+    async function spamRequests() {
+      const results = [];
+      for (let i = 1; i <= 12; i++) {
+        const key = document.getElementById("apikey").value;
+        const res = await fetch(GATEWAY + "/api/orders", {
+          headers: key ? { apikey: key } : {},
+        });
+        results.push(`#${i}: ${res.status}`);
+      }
+      document.getElementById("out").textContent = results.join("\n");
+    }
+  </script>
+</body>
+</html>
