@@ -55,7 +55,7 @@ plugins:
 
   - name: rate-limiting
     config:
-      minute: 10
+      minute: 20
       policy: local
 
   - name: request-transformer
