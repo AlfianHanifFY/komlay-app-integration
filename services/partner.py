@@ -24,5 +24,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        received = json.loads(self.rfile.read(length) or "{}")
+        data = {
+            "service": "kirimcepat-partner",
+            "received_body": received,
+            "transformed_headers": {
+                "X-Partner-Source": self.headers.get("X-Partner-Source"),
+            },
+        }
+        body = json.dumps(data).encode()
+        self.send_response(201)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(body)
+
 
 HTTPServer(("0.0.0.0", 5003), Handler).serve_forever()

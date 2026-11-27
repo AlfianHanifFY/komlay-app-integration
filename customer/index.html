@@ -43,6 +43,7 @@
   <div class="card">
     <h2>3. KirimCepat Partner (<code>/api/shipments</code>)</h2>
     <button onclick="callPartner()">GET Shipments (X-Order-Id transform)</button>
+    <button onclick="createShipment()">POST Shipment (order_id &rarr; kirimcepat_ref)</button>
   </div>
 
   <div class="card">
@@ -101,6 +102,10 @@
 
     function callPartner() {
       callApi("GET", "/api/shipments", null, { "X-Order-Id": "ORD-999" });
+    }
+
+    function createShipment() {
+      callApi("POST", "/api/shipments", { order_id: 5, address: "Bandung" });
     }
 
     async function spamRequests() {

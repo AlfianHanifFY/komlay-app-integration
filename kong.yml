@@ -67,3 +67,5 @@ plugins:
       rename:
         headers:
           - "X-Order-Id:X-KirimCepat-Ref"
+        body:
+          - "order_id:kirimcepat_ref"

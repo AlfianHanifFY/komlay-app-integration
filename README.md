@@ -40,6 +40,13 @@ Open **Customer Web App**: `http://localhost:8080`
    ```
    Kong renames `X-Order-Id` → `X-KirimCepat-Ref` and adds `X-Partner-Source: kilatmart-gateway`.
 
+   Body field rename (JSON):
+   ```bash
+   curl -H "apikey: kilatmart-key-123" -H "Content-Type: application/json" \
+     -d '{"order_id": 5, "address": "Bandung"}' http://localhost:8000/api/shipments
+   ```
+   The partner receives `{"kirimcepat_ref": 5, "address": "Bandung"}`.
+
 ## Failure Experiment
 
 Stop the `webshop` container:
