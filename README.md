@@ -30,9 +30,9 @@ Open **Customer Web App**: `http://localhost:8080`
    ```bash
    curl -i http://localhost:8000/api/orders
    ```
-3. **Rate limiting (`429 Too Many Requests` after 10 req/min)**:
+3. **Rate limiting (`429 Too Many Requests` after 20 req/min)**:
    ```bash
-   for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code}\n" -H "apikey: kilatmart-key-123" http://localhost:8000/api/orders; done
+   for i in $(seq 1 25); do curl -s -o /dev/null -w "%{http_code}\n" -H "apikey: kilatmart-key-123" http://localhost:8000/api/orders; done
    ```
 4. **Request transformation (partner header rename & add)**:
    ```bash

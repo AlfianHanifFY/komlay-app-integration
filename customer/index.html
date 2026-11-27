@@ -47,7 +47,7 @@
 
   <div class="card">
     <h2>4. Rate Limit Test (<code>429</code>)</h2>
-    <button onclick="spamRequests()">Send 12 Requests Fast</button>
+    <button onclick="spamRequests()">Send 25 Requests Fast</button>
   </div>
 
   <h2>Response</h2>
@@ -106,7 +106,7 @@
     async function spamRequests() {
       const results = [];
       let lastStatus = 200;
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 25; i++) {
         const key = document.getElementById("apikey").value;
         const res = await fetch(GATEWAY + "/api/orders", {
           headers: key ? { apikey: key } : {},
